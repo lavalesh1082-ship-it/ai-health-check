@@ -1,1144 +1,1144 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f7fa">
 <title>Camera Pulse Check</title>
 
 <style>
-  * {
-    box-sizing: border-box;
-  }
+*{box-sizing:border-box}
 
-  body {
-    margin: 0;
-    background: #f5f7fa;
-    color: #17202a;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  }
+body{
+  margin:0;
+  background:#f7f7fa;
+  color:#17202b;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
 
-  main {
-    max-width: 680px;
-    margin: 0 auto;
-    background: white;
-    min-height: 100vh;
-    padding: 28px 20px 50px;
-  }
+main{
+  width:min(680px,100%);
+  margin:auto;
+  padding:28px 18px 50px;
+}
 
-  h1 {
-    margin: 0 0 24px;
-    font-size: 32px;
-  }
+.card{
+  background:white;
+  border-radius:22px;
+  padding:26px;
+  box-shadow:0 4px 24px rgba(0,0,0,.07);
+}
 
-  .instruction {
-    font-size: 19px;
-    line-height: 1.45;
-    margin-bottom: 22px;
-  }
+h1{
+  margin:0 0 22px;
+  font-size:30px;
+  line-height:1.15;
+}
 
-  .buttons {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
+.instructions{
+  font-size:18px;
+  line-height:1.45;
+  margin-bottom:20px;
+}
 
-  button {
-    border: 0;
-    border-radius: 14px;
-    padding: 16px 25px;
-    font-size: 18px;
-    font-weight: 700;
-    cursor: pointer;
-  }
+.buttons{
+  display:flex;
+  gap:14px;
+  margin-bottom:18px;
+}
 
-  #start {
-    background: #111827;
-    color: white;
-  }
+button{
+  border:0;
+  border-radius:18px;
+  padding:17px 28px;
+  font-size:18px;
+  font-weight:700;
+  cursor:pointer;
+}
 
-  #stop {
-    background: #9ca3af;
-    color: white;
-  }
+#start{
+  background:#111827;
+  color:white;
+}
 
-  #stop:not(:disabled) {
-    background: #6b7280;
-  }
+#stop{
+  background:#b9bdc5;
+  color:white;
+}
 
-  button:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-  }
+button:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
 
-  video {
-    width: 100%;
-    height: 440px;
-    object-fit: cover;
-    background: #000;
-    border-radius: 24px;
-    display: block;
-  }
+#cameraBox{
+  position:relative;
+  width:100%;
+  aspect-ratio:3/4;
+  background:#000;
+  border-radius:26px;
+  overflow:hidden;
+}
 
-  canvas {
-    display: none;
-  }
+video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
 
-  .status {
-    margin-top: 22px;
-    font-size: 18px;
-    line-height: 1.45;
-  }
+#cameraStatus{
+  margin-top:20px;
+  font-size:17px;
+  line-height:1.45;
+}
 
-  .status.good {
-    color: #18794e;
-  }
+.status{
+  font-weight:600;
+}
 
-  .status.warn {
-    color: #b45309;
-  }
+.good{color:#18794e}
+.warn{color:#a15c00}
+.bad{color:#ad2929}
 
-  .status.error {
-    color: #b91c1c;
-  }
+#progressOuter{
+  width:100%;
+  height:10px;
+  background:#e4e6eb;
+  border-radius:20px;
+  overflow:hidden;
+  margin-top:16px;
+  display:none;
+}
 
-  .result {
-    margin-top: 12px;
-    font-size: 72px;
-    line-height: 1;
-    font-weight: 800;
-    letter-spacing: -2px;
-  }
+#progress{
+  width:0%;
+  height:100%;
+  background:#159447;
+  transition:width .25s linear;
+}
 
-  .unit {
-    font-size: 24px;
-    font-weight: 700;
-    letter-spacing: 0;
-  }
+.result{
+  margin-top:22px;
+  padding-top:20px;
+  border-top:1px solid #e5e7eb;
+}
 
-  .progress {
-    margin-top: 20px;
-    height: 10px;
-    background: #e5e7eb;
-    border-radius: 10px;
-    overflow: hidden;
-  }
+.resultLabel{
+  font-size:16px;
+  color:#667085;
+}
 
-  .progressBar {
-    height: 100%;
-    width: 0%;
-    background: #16a34a;
-    transition: width 0.2s linear;
-  }
+#bpm{
+  font-size:64px;
+  font-weight:800;
+  line-height:1;
+  margin:8px 0;
+}
 
-  .small {
-    margin-top: 14px;
-    color: #6b7280;
-    font-size: 14px;
-    line-height: 1.45;
-  }
+#quality{
+  font-size:17px;
+  font-weight:700;
+}
 
-  .quality {
-    margin-top: 12px;
-    font-size: 15px;
-    color: #4b5563;
-  }
+.small{
+  color:#667085;
+  font-size:14px;
+  line-height:1.45;
+  margin-top:14px;
+}
+
+.hidden{
+  display:none;
+}
+
+canvas{
+  display:none;
+}
 </style>
 </head>
 
 <body>
 
 <main>
+  <section class="card">
 
-  <h1>❤️ Camera Pulse Check</h1>
+    <h1>❤️ Camera Pulse Check</h1>
 
-  <div class="instruction">
-    Allow camera access, then gently cover the <b>rear camera</b>
-    completely with your fingertip.
-    Keep your finger still for about <b>30 seconds</b>.
-  </div>
+    <div class="instructions">
+      Allow camera access, then gently cover the <b>rear camera</b>
+      completely with your fingertip. Keep your finger still.
+      The measurement normally takes about <b>30 seconds</b>.
+    </div>
 
-  <div class="buttons">
-    <button id="start">Start camera</button>
-    <button id="stop" disabled>Stop</button>
-  </div>
+    <div class="buttons">
+      <button id="start">Start camera</button>
+      <button id="stop" disabled>Stop</button>
+    </div>
 
-  <video id="video" autoplay muted playsinline></video>
+    <div id="cameraBox">
+      <video id="video" autoplay playsinline muted></video>
+    </div>
 
-  <canvas id="canvas" width="160" height="120"></canvas>
+    <div id="cameraStatus" class="status">
+      Press <b>Start camera</b> to begin.
+    </div>
 
-  <div id="status" class="status">
-    Ready. Press "Start camera".
-  </div>
+    <div id="progressOuter">
+      <div id="progress"></div>
+    </div>
 
-  <div class="progress">
-    <div id="progressBar" class="progressBar"></div>
-  </div>
+    <div id="result" class="result hidden">
+      <div class="resultLabel">Estimated heart rate</div>
+      <div id="bpm">-- BPM</div>
+      <div id="quality"></div>
+      <div class="small">
+        This is an experimental camera-based estimate and is not a
+        medical-grade measurement.
+      </div>
+    </div>
 
-  <div id="result" class="result">
-    --
-  </div>
-
-  <div class="unit">BPM</div>
-
-  <div id="quality" class="quality">
-    No measurement yet.
-  </div>
-
-  <div class="small">
-    This is an experimental camera-based estimate and is not a medical
-    device. For an accurate heart-rate measurement, use a validated
-    pulse oximeter, smartwatch, ECG, or other medical-grade device.
-  </div>
-
+  </section>
 </main>
+
+<canvas id="canvas" width="160" height="120"></canvas>
 
 <script>
 "use strict";
 
-/* =========================================================
-   CAMERA PULSE CHECK
-   More reliable BPM estimation using:
-   1. Camera red/green signal extraction
-   2. Signal normalization
-   3. Detrending
-   4. Smoothing
-   5. Autocorrelation
-   6. Signal-quality checks
-   7. 30-second measurement window
-   ========================================================= */
+/*
+  CAMERA PULSE CHECK
+  ------------------
+  This version does NOT simply count peaks.
+
+  It:
+  1. Captures the average colour from the covered camera.
+  2. Builds a normalized optical signal.
+  3. Resamples the signal.
+  4. Removes slow brightness changes.
+  5. Searches the physiological frequency range.
+  6. Compares spectral and autocorrelation estimates.
+  7. Requires adequate signal quality before showing BPM.
+*/
 
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d", {
-  willReadFrequently: true
-});
+const ctx = canvas.getContext("2d", {willReadFrequently:true});
 
-const startButton = document.getElementById("start");
-const stopButton = document.getElementById("stop");
-const statusEl = document.getElementById("status");
+const startBtn = document.getElementById("start");
+const stopBtn = document.getElementById("stop");
+
+const statusEl = document.getElementById("cameraStatus");
+const progressOuter = document.getElementById("progressOuter");
+const progressEl = document.getElementById("progress");
+
 const resultEl = document.getElementById("result");
+const bpmEl = document.getElementById("bpm");
 const qualityEl = document.getElementById("quality");
-const progressBar = document.getElementById("progressBar");
 
 let stream = null;
 let running = false;
-let startTime = 0;
 let animationId = null;
 
 let samples = [];
-let sampleTimes = [];
+let startTime = 0;
+let lastSampleTime = 0;
 
 const MEASUREMENT_SECONDS = 30;
+const TARGET_HZ = 20;
 
-/* We only search for physiologically plausible
-   frequencies between 45 and 180 BPM. */
-const MIN_BPM = 45;
-const MAX_BPM = 180;
-
-/* ---------------------------------------------------------
+/* -----------------------------------------------------------
    Utility
-   --------------------------------------------------------- */
+----------------------------------------------------------- */
 
-function setStatus(text, type = "") {
-  statusEl.textContent = text;
-  statusEl.className = "status " + type;
+function setStatus(text, cls=""){
+  statusEl.className = "status " + cls;
+  statusEl.innerHTML = text;
 }
 
-function resetResult() {
-  resultEl.textContent = "--";
-  qualityEl.textContent = "No measurement yet.";
-  progressBar.style.width = "0%";
+function clamp(v,min,max){
+  return Math.max(min,Math.min(max,v));
 }
 
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
+function median(arr){
+  if(!arr.length) return NaN;
+  const a=arr.slice().sort((x,y)=>x-y);
+  const m=Math.floor(a.length/2);
+  return a.length%2 ? a[m] : (a[m-1]+a[m])/2;
 }
 
-/* ---------------------------------------------------------
-   Start camera
-   --------------------------------------------------------- */
+function mean(arr){
+  if(!arr.length) return 0;
+  return arr.reduce((a,b)=>a+b,0)/arr.length;
+}
 
-async function startCamera() {
+function std(arr){
+  if(arr.length<2) return 0;
+  const m=mean(arr);
+  return Math.sqrt(mean(arr.map(x=>(x-m)*(x-m))));
+}
 
-  if (running) return;
+/* -----------------------------------------------------------
+   Camera
+----------------------------------------------------------- */
 
-  resetResult();
+async function startCamera(){
 
-  if (!navigator.mediaDevices ||
-      !navigator.mediaDevices.getUserMedia) {
+  if(running) return;
 
-    setStatus(
-      "Camera access is not supported by this browser.",
-      "error"
-    );
+  resultEl.classList.add("hidden");
+  bpmEl.textContent="-- BPM";
+  qualityEl.textContent="";
 
-    return;
-  }
+  samples=[];
+  startTime=performance.now();
+  lastSampleTime=0;
 
-  try {
+  try{
 
-    setStatus(
-      "Requesting camera access...",
-      "warn"
-    );
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      throw new Error("Camera API unavailable");
+    }
 
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: {
-          ideal: "environment"
-        },
-        width: {
-          ideal: 640
-        },
-        height: {
-          ideal: 480
-        },
-        frameRate: {
-          ideal: 30,
-          min: 20
-        }
+    setStatus("Requesting camera access…","warn");
+
+    stream=await navigator.mediaDevices.getUserMedia({
+      video:{
+        facingMode:{ideal:"environment"},
+        width:{ideal:640},
+        height:{ideal:480},
+        frameRate:{ideal:30,max:30}
       },
-      audio: false
+      audio:false
     });
 
-    video.srcObject = stream;
+    video.srcObject=stream;
 
     await video.play();
 
-    /* Try to enable torch when supported.
-       This greatly improves finger-camera measurements. */
-    try {
+    /*
+      Some Android browsers support torch mode.
+      We attempt to turn the torch on because illumination makes
+      fingertip PPG considerably more stable.
+    */
+    try{
+      const track=stream.getVideoTracks()[0];
+      const capabilities=track.getCapabilities();
 
-      const track = stream.getVideoTracks()[0];
-
-      if (track) {
-
-        const capabilities =
-          track.getCapabilities ?
-          track.getCapabilities() :
-          {};
-
-        if (capabilities.torch) {
-
-          await track.applyConstraints({
-            advanced: [
-              {
-                torch: true
-              }
-            ]
-          });
-
-        }
+      if(capabilities && capabilities.torch){
+        await track.applyConstraints({
+          advanced:[{torch:true}]
+        });
       }
-
-    } catch (torchError) {
+    }catch(e){
       /* Torch is optional. Continue without it. */
     }
 
-    running = true;
-    startTime = performance.now();
+    running=true;
+    startBtn.disabled=true;
+    stopBtn.disabled=false;
 
-    samples = [];
-    sampleTimes = [];
-
-    startButton.disabled = true;
-    stopButton.disabled = false;
+    progressOuter.style.display="block";
+    progressEl.style.width="0%";
 
     setStatus(
-      "Camera started. Cover the rear camera completely and keep your finger still.",
+      "Camera started. Cover the rear camera completely with your fingertip and keep it still.",
       "warn"
     );
 
-    captureLoop();
+    requestAnimationFrame(captureFrame);
 
-  } catch (error) {
+  }catch(err){
 
-    console.error(error);
+    running=false;
 
     setStatus(
       "Camera could not be started. Please allow camera permission and try again.",
-      "error"
+      "bad"
     );
 
-    stopCamera();
+    console.error(err);
   }
 }
 
-/* ---------------------------------------------------------
-   Capture frames
-   --------------------------------------------------------- */
+function stopCamera(){
 
-function captureLoop() {
+  running=false;
 
-  if (!running) return;
+  if(animationId){
+    cancelAnimationFrame(animationId);
+    animationId=null;
+  }
 
-  const elapsed =
-    (performance.now() - startTime) / 1000;
+  if(stream){
 
-  const progress =
-    clamp(
-      elapsed / MEASUREMENT_SECONDS * 100,
-      0,
-      100
-    );
+    try{
+      const track=stream.getVideoTracks()[0];
 
-  progressBar.style.width = progress + "%";
+      try{
+        const capabilities=track.getCapabilities();
 
-  if (elapsed >= MEASUREMENT_SECONDS) {
+        if(capabilities && capabilities.torch){
+          track.applyConstraints({
+            advanced:[{torch:false}]
+          }).catch(()=>{});
+        }
+      }catch(e){}
+
+    }catch(e){}
+
+    stream.getTracks().forEach(t=>t.stop());
+    stream=null;
+  }
+
+  video.srcObject=null;
+
+  startBtn.disabled=false;
+  stopBtn.disabled=true;
+
+  progressOuter.style.display="none";
+
+  setStatus("Measurement stopped.","warn");
+}
+
+/* -----------------------------------------------------------
+   Capture optical signal
+----------------------------------------------------------- */
+
+function captureFrame(now){
+
+  if(!running) return;
+
+  animationId=requestAnimationFrame(captureFrame);
+
+  const elapsed=(now-startTime)/1000;
+
+  if(elapsed >= MEASUREMENT_SECONDS){
 
     finishMeasurement();
     return;
   }
 
-  if (
-    video.readyState >=
-    HTMLMediaElement.HAVE_CURRENT_DATA
-  ) {
+  /*
+    Sample roughly 20 times per second.
+    Avoid excessive duplicate frames.
+  */
+  if(now-lastSampleTime < 1000/TARGET_HZ) return;
 
-    ctx.drawImage(
-      video,
-      0,
-      0,
-      canvas.width,
-      canvas.height
+  lastSampleTime=now;
+
+  if(video.readyState < 2) return;
+
+  try{
+
+    ctx.drawImage(video,0,0,canvas.width,canvas.height);
+
+    const image=ctx.getImageData(
+      0,0,canvas.width,canvas.height
     );
 
-    const frame =
-      ctx.getImageData(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
+    const data=image.data;
 
-    const signal =
-      extractPulseSignal(frame);
+    let r=0,g=0,b=0;
+    let bright=0;
+    let count=0;
 
-    if (signal !== null) {
+    /*
+      Ignore a small border.
+      This reduces the effect of edges/light leakage.
+    */
+    const x0=20;
+    const x1=140;
+    const y0=15;
+    const y1=105;
 
-      samples.push(signal);
-      sampleTimes.push(performance.now());
+    for(let y=y0;y<y1;y++){
+
+      for(let x=x0;x<x1;x++){
+
+        const i=(y*canvas.width+x)*4;
+
+        const R=data[i];
+        const G=data[i+1];
+        const B=data[i+2];
+
+        r+=R;
+        g+=G;
+        b+=B;
+
+        bright+=(R+G+B)/3;
+        count++;
+      }
     }
-  }
 
-  /*
-   * requestVideoFrameCallback is better than setInterval
-   * because it follows actual camera frames.
-   */
+    r/=count;
+    g/=count;
+    b/=count;
+    bright/=count;
 
-  if ("requestVideoFrameCallback" in video) {
+    /*
+      Normalized red/green optical signal.
 
-    video.requestVideoFrameCallback(() => {
-      captureLoop();
+      Raw brightness is unreliable because a finger can move
+      slightly and change exposure. Normalization reduces that
+      effect.
+    */
+    const total=r+g+b+1;
+
+    const redNorm=r/total;
+    const greenNorm=g/total;
+
+    /*
+      Combining normalized channels is more stable than using
+      only the raw red channel on many phone cameras.
+    */
+    const signal=redNorm-greenNorm*0.45;
+
+    samples.push({
+      t:elapsed,
+      s:signal,
+      r:r,
+      g:g,
+      b:b,
+      bright:bright
     });
 
-  } else {
-
-    animationId =
-      requestAnimationFrame(captureLoop);
-  }
-}
-
-/* ---------------------------------------------------------
-   Extract pulse signal from fingertip
-   --------------------------------------------------------- */
-
-function extractPulseSignal(imageData) {
-
-  const data = imageData.data;
-
-  const width = imageData.width;
-  const height = imageData.height;
-
-  /*
-   * Ignore the outer edges.
-   * Use a central region because the fingertip should
-   * normally cover the central camera area.
-   */
-
-  const x1 = Math.floor(width * 0.25);
-  const x2 = Math.floor(width * 0.75);
-
-  const y1 = Math.floor(height * 0.25);
-  const y2 = Math.floor(height * 0.75);
-
-  let red = 0;
-  let green = 0;
-  let blue = 0;
-
-  let count = 0;
-
-  for (let y = y1; y < y2; y += 2) {
-
-    for (let x = x1; x < x2; x += 2) {
-
-      const i =
-        (y * width + x) * 4;
-
-      red += data[i];
-      green += data[i + 1];
-      blue += data[i + 2];
-
-      count++;
-    }
-  }
-
-  if (count === 0) {
-    return null;
-  }
-
-  red /= count;
-  green /= count;
-  blue /= count;
-
-  const brightness =
-    (red + green + blue) / 3;
-
-  /*
-   * A completely black image normally means the finger
-   * is not correctly covering/illuminating the camera.
-   */
-
-  if (brightness < 3) {
-    return null;
-  }
-
-  /*
-   * Pulse information is particularly strong in the
-   * red channel when the fingertip is illuminated.
-   *
-   * We use a ratio rather than raw brightness so that
-   * small exposure changes have less influence.
-   */
-
-  const signal =
-    red / (green + blue + 1);
-
-  return signal;
-}
-
-/* ---------------------------------------------------------
-   Finish measurement
-   --------------------------------------------------------- */
-
-function finishMeasurement() {
-
-  running = false;
-
-  if (stream) {
-
-    stream.getTracks().forEach(track => {
-      track.stop();
-    });
-
-    stream = null;
-  }
-
-  startButton.disabled = false;
-  stopButton.disabled = true;
-
-  progressBar.style.width = "100%";
-
-  const measurement =
-    calculateBPM(
-      samples,
-      sampleTimes
-    );
-
-  if (!measurement) {
-
-    resultEl.textContent = "--";
-
-    setStatus(
-      "Unable to obtain a reliable pulse signal. Please try again with the camera fully covered and your finger completely still.",
-      "error"
-    );
-
-    qualityEl.textContent =
-      "Signal quality was insufficient.";
-
-    return;
-  }
-
-  const bpm =
-    Math.round(measurement.bpm);
-
-  resultEl.textContent = bpm;
-
-  if (measurement.quality === "good") {
-
-    setStatus(
-      "Pulse estimate obtained.",
-      "good"
-    );
-
-  } else {
-
-    setStatus(
-      "Pulse estimate obtained, but signal quality was only moderate.",
-      "warn"
-    );
-  }
-
-  qualityEl.textContent =
-    "Estimated from " +
-    measurement.seconds.toFixed(1) +
-    " seconds of camera data • Signal quality: " +
-    measurement.quality +
-    " • Confidence: " +
-    Math.round(measurement.confidence) +
-    "%";
-}
-
-/* ---------------------------------------------------------
-   Calculate BPM
-   --------------------------------------------------------- */
-
-function calculateBPM(values, times) {
-
-  if (!values || values.length < 150) {
-    return null;
-  }
-
-  if (times.length !== values.length) {
-    return null;
-  }
-
-  /*
-   * Convert camera timestamps into seconds.
-   */
-
-  const t = times.map(
-    x => (x - times[0]) / 1000
-  );
-
-  const duration =
-    t[t.length - 1];
-
-  if (duration < 15) {
-    return null;
-  }
-
-  /*
-   * Remove invalid values.
-   */
-
-  const clean = [];
-
-  for (let i = 0; i < values.length; i++) {
-
-    const v = values[i];
-
-    if (
-      Number.isFinite(v) &&
-      v > 0
-    ) {
-      clean.push(v);
-    }
-  }
-
-  if (clean.length < 150) {
-    return null;
-  }
-
-  /*
-   * Median filtering removes occasional camera spikes.
-   */
-
-  const filtered =
-    medianFilter(clean, 5);
-
-  /*
-   * Normalize.
-   */
-
-  const mean =
-    filtered.reduce(
-      (a, b) => a + b,
-      0
-    ) / filtered.length;
-
-  let variance = 0;
-
-  for (const v of filtered) {
-    variance +=
-      (v - mean) *
-      (v - mean);
-  }
-
-  variance /=
-    filtered.length;
-
-  const std =
-    Math.sqrt(variance);
-
-  if (
-    !Number.isFinite(std) ||
-    std < 0.00001
-  ) {
-    return null;
-  }
-
-  const normalized =
-    filtered.map(
-      v => (v - mean) / std
-    );
-
-  /*
-   * Remove slow baseline drift using a moving average.
-   */
-
-  const detrended =
-    highPassLike(
-      normalized,
-      15
-    );
-
-  /*
-   * Smooth high-frequency camera noise.
-   */
-
-  const smooth =
-    movingAverage(
-      detrended,
-      5
-    );
-
-  /*
-   * Estimate the effective sampling rate.
-   */
-
-  let totalDt = 0;
-
-  for (let i = 1; i < t.length; i++) {
-    totalDt +=
-      t[i] - t[i - 1];
-  }
-
-  const fs =
-    (t.length - 1) / totalDt;
-
-  if (
-    !Number.isFinite(fs) ||
-    fs < 5
-  ) {
-    return null;
-  }
-
-  /*
-   * Autocorrelation:
-   *
-   * Instead of simply counting peaks, we search for the
-   * repeating interval of the pulse waveform.
-   *
-   * This is much less sensitive to individual false peaks.
-   */
-
-  const minLag =
-    Math.floor(
-      fs * 60 / MAX_BPM
-    );
-
-  const maxLag =
-    Math.ceil(
-      fs * 60 / MIN_BPM
-    );
-
-  if (maxLag >= smooth.length) {
-    return null;
-  }
-
-  let bestLag = -1;
-  let bestScore = -Infinity;
-
-  /*
-   * Evaluate neighbouring lags and favour a smooth,
-   * repeated waveform.
-   */
-
-  for (
-    let lag = minLag;
-    lag <= maxLag;
-    lag++
-  ) {
-
-    let sum = 0;
-    let count = 0;
-
-    for (
-      let i = lag;
-      i < smooth.length;
-      i++
-    ) {
-
-      sum +=
-        smooth[i] *
-        smooth[i - lag];
-
-      count++;
-    }
-
-    if (count < 50) continue;
-
-    const score =
-      sum / count;
-
-    if (score > bestScore) {
-
-      bestScore = score;
-      bestLag = lag;
-    }
-  }
-
-  if (bestLag < 0) {
-    return null;
-  }
-
-  /*
-   * Parabolic interpolation around the winning lag
-   * improves the BPM estimate beyond one camera frame.
-   */
-
-  let refinedLag =
-    bestLag;
-
-  if (
-    bestLag > minLag &&
-    bestLag < maxLag
-  ) {
-
-    const a =
-      autocorrelationAt(
-        smooth,
-        bestLag - 1
-      );
-
-    const b =
-      autocorrelationAt(
-        smooth,
-        bestLag
-      );
-
-    const c =
-      autocorrelationAt(
-        smooth,
-        bestLag + 1
-      );
-
-    const denominator =
-      a - 2 * b + c;
-
-    if (
-      Math.abs(denominator) >
-      0.000001
-    ) {
-
-      const offset =
-        0.5 *
-        (a - c) /
-        denominator;
-
-      refinedLag =
-        bestLag + offset;
-    }
-  }
-
-  const period =
-    refinedLag / fs;
-
-  let bpm =
-    60 / period;
-
-  /*
-   * Sanity check.
-   */
-
-  if (
-    !Number.isFinite(bpm) ||
-    bpm < MIN_BPM ||
-    bpm > MAX_BPM
-  ) {
-    return null;
-  }
-
-  /*
-   * Signal quality.
-   *
-   * Autocorrelation closer to 1 means a strongly
-   * repeating pulse waveform.
-   */
-
-  const qualityScore =
-    clamp(
-      bestScore,
-      0,
-      1
-    );
-
-  /*
-   * Also check whether the signal has enough variation.
-   */
-
-  let signalEnergy = 0;
-
-  for (const v of smooth) {
-    signalEnergy += v * v;
-  }
-
-  signalEnergy /=
-    smooth.length;
-
-  if (
-    !Number.isFinite(signalEnergy) ||
-    signalEnergy < 0.01
-  ) {
-    return null;
-  }
-
-  /*
-   * Confidence is deliberately conservative.
-   */
-
-  let confidence =
-    qualityScore * 100;
-
-  confidence =
-    clamp(
-      confidence,
+    const percent=clamp(
+      elapsed/MEASUREMENT_SECONDS*100,
       0,
       100
     );
 
-  let quality;
+    progressEl.style.width=percent.toFixed(1)+"%";
 
-  if (confidence >= 60) {
-    quality = "good";
-  } else if (confidence >= 40) {
-    quality = "moderate";
-  } else {
-    quality = "low";
-  }
+    const secondsLeft=Math.ceil(
+      MEASUREMENT_SECONDS-elapsed
+    );
 
-  /*
-   * Reject very weak measurements rather than displaying
-   * misleading numbers such as 41, 46 or 53 BPM caused by
-   * random camera fluctuations.
-   */
+    if(samples.length<100){
 
-  if (confidence < 25) {
-    return null;
-  }
+      setStatus(
+        "Collecting signal… keep your finger completely still. "+
+        secondsLeft+"s remaining.",
+        "warn"
+      );
 
-  return {
-    bpm: bpm,
-    confidence: confidence,
-    quality: quality,
-    seconds: duration
-  };
-}
+    }else{
 
-/* ---------------------------------------------------------
-   Median filter
-   --------------------------------------------------------- */
+      const recent=samples.slice(-200);
 
-function medianFilter(arr, windowSize) {
+      const brightness=mean(recent.map(x=>x.bright));
 
-  const result =
-    new Array(arr.length);
+      /*
+        Very dark frames usually mean the fingertip is not
+        covering the camera correctly.
+      */
+      if(brightness < 8){
 
-  const half =
-    Math.floor(windowSize / 2);
+        setStatus(
+          "Camera is too dark. Cover the lens fully with your fingertip.",
+          "bad"
+        );
 
-  for (let i = 0; i < arr.length; i++) {
+      }else{
 
-    const window = [];
-
-    for (
-      let j = -half;
-      j <= half;
-      j++
-    ) {
-
-      const index =
-        i + j;
-
-      if (
-        index >= 0 &&
-        index < arr.length
-      ) {
-        window.push(arr[index]);
+        setStatus(
+          "Measuring pulse… keep your finger still. "+
+          secondsLeft+"s remaining.",
+          "good"
+        );
       }
     }
 
-    window.sort(
-      (a, b) => a - b
-    );
+  }catch(err){
 
-    result[i] =
-      window[
-        Math.floor(window.length / 2)
-      ];
+    console.error(err);
   }
-
-  return result;
 }
 
-/* ---------------------------------------------------------
-   Moving average
-   --------------------------------------------------------- */
+/* -----------------------------------------------------------
+   Resampling
+----------------------------------------------------------- */
 
-function movingAverage(arr, windowSize) {
+function resampleSignal(points){
 
-  const result =
-    new Array(arr.length);
+  if(points.length<100) return null;
 
-  let sum = 0;
+  const duration=points[points.length-1].t-points[0].t;
 
-  for (let i = 0; i < arr.length; i++) {
+  if(duration<15) return null;
 
-    sum += arr[i];
+  const dt=1/TARGET_HZ;
 
-    if (i >= windowSize) {
-      sum -=
-        arr[i - windowSize];
+  const start=points[0].t;
+  const end=points[points.length-1].t;
+
+  const output=[];
+
+  let j=0;
+
+  for(let t=start;t<=end;t+=dt){
+
+    while(
+      j<points.length-2 &&
+      points[j+1].t<t
+    ){
+      j++;
     }
 
-    const count =
-      Math.min(
-        i + 1,
-        windowSize
-      );
+    const a=points[j];
+    const b=points[Math.min(j+1,points.length-1)];
 
-    result[i] =
-      sum / count;
+    if(!a || !b) continue;
+
+    const span=b.t-a.t;
+
+    let v;
+
+    if(span<=0){
+      v=a.s;
+    }else{
+      const f=(t-a.t)/span;
+      v=a.s+(b.s-a.s)*f;
+    }
+
+    output.push(v);
   }
 
-  return result;
+  return output;
 }
 
-/* ---------------------------------------------------------
-   Remove slow baseline changes
-   --------------------------------------------------------- */
+/* -----------------------------------------------------------
+   Signal processing
+----------------------------------------------------------- */
 
-function highPassLike(arr, windowSize) {
+function detrend(signal){
 
-  const baseline =
-    movingAverage(
-      arr,
-      windowSize
+  const n=signal.length;
+
+  if(n<10) return [];
+
+  /*
+    Remove slow drift using a moving-average baseline.
+  */
+  const window=Math.max(
+    3,
+    Math.round(TARGET_HZ*2.0)
+  );
+
+  const prefix=new Array(n+1).fill(0);
+
+  for(let i=0;i<n;i++){
+    prefix[i+1]=prefix[i]+signal[i];
+  }
+
+  const out=new Array(n);
+
+  for(let i=0;i<n;i++){
+
+    const a=Math.max(0,i-window);
+    const b=Math.min(n-1,i+window);
+
+    const baseline=
+      (prefix[b+1]-prefix[a])/(b-a+1);
+
+    out[i]=signal[i]-baseline;
+  }
+
+  return out;
+}
+
+function smooth(signal){
+
+  const window=3;
+  const out=new Array(signal.length);
+
+  for(let i=0;i<signal.length;i++){
+
+    let sum=0;
+    let n=0;
+
+    for(
+      let j=Math.max(0,i-window);
+      j<=Math.min(signal.length-1,i+window);
+      j++
+    ){
+
+      sum+=signal[j];
+      n++;
+    }
+
+    out[i]=sum/n;
+  }
+
+  return out;
+}
+
+/* -----------------------------------------------------------
+   Spectral analysis using DFT
+----------------------------------------------------------- */
+
+function spectralEstimate(signal){
+
+  const n=signal.length;
+
+  if(n<200){
+    return null;
+  }
+
+  const meanValue=mean(signal);
+
+  const centered=signal.map(v=>v-meanValue);
+
+  const frequencies=[];
+
+  /*
+    Physiological range:
+    45–180 BPM = 0.75–3.00 Hz
+  */
+  for(let f=0.75;f<=3.0;f+=0.025){
+
+    let re=0;
+    let im=0;
+
+    for(let i=0;i<n;i++){
+
+      /*
+        Hann window reduces spectral leakage.
+      */
+      const w=
+        0.5-
+        0.5*Math.cos(
+          2*Math.PI*i/(n-1)
+        );
+
+      const angle=
+        2*Math.PI*f*i/TARGET_HZ;
+
+      const v=centered[i]*w;
+
+      re+=v*Math.cos(angle);
+      im-=v*Math.sin(angle);
+    }
+
+    const power=(re*re+im*im);
+
+    frequencies.push({
+      f:f,
+      power:power
+    });
+  }
+
+  frequencies.sort(
+    (a,b)=>b.power-a.power
+  );
+
+  const best=frequencies[0];
+
+  if(!best) return null;
+
+  /*
+    Compare peak against surrounding frequencies.
+    A real periodic pulse should have a stronger peak than
+    its immediate neighbourhood.
+  */
+  const neighbours=frequencies.filter(x=>
+    Math.abs(x.f-best.f)>0.12 &&
+    Math.abs(x.f-best.f)<0.45
+  );
+
+  const background=mean(
+    neighbours.map(x=>x.power)
+  );
+
+  const snr=
+    background>0
+      ? best.power/background
+      : 0;
+
+  return {
+    bpm:best.f*60,
+    power:best.power,
+    snr:snr
+  };
+}
+
+/* -----------------------------------------------------------
+   Autocorrelation
+----------------------------------------------------------- */
+
+function autocorrelationEstimate(signal){
+
+  const n=signal.length;
+
+  if(n<250) return null;
+
+  const m=mean(signal);
+
+  const x=signal.map(v=>v-m);
+
+  let energy=0;
+
+  for(const v of x){
+    energy+=v*v;
+  }
+
+  if(energy<=0) return null;
+
+  let bestLag=-1;
+  let bestCorr=-Infinity;
+
+  /*
+    45–180 BPM
+  */
+  const minLag=
+    Math.floor(TARGET_HZ*60/180);
+
+  const maxLag=
+    Math.ceil(TARGET_HZ*60/45);
+
+  for(
+    let lag=minLag;
+    lag<=maxLag;
+    lag++
+  ){
+
+    let sum=0;
+
+    for(
+      let i=0;
+      i<n-lag;
+      i++
+    ){
+      sum+=x[i]*x[i+lag];
+    }
+
+    const corr=
+      sum/energy;
+
+    if(corr>bestCorr){
+
+      bestCorr=corr;
+      bestLag=lag;
+    }
+  }
+
+  if(bestLag<0) return null;
+
+  const bpm=
+    60*TARGET_HZ/bestLag;
+
+  return {
+    bpm:bpm,
+    correlation:bestCorr
+  };
+}
+
+/* -----------------------------------------------------------
+   Signal quality
+----------------------------------------------------------- */
+
+function calculateQuality(raw,filtered){
+
+  if(!raw.length || !filtered.length){
+    return {
+      good:false,
+      score:0,
+      reason:"Not enough signal."
+    };
+  }
+
+  const rawStd=std(raw);
+  const filteredStd=std(filtered);
+
+  if(!isFinite(rawStd) || !isFinite(filteredStd)){
+    return {
+      good:false,
+      score:0,
+      reason:"Invalid signal."
+    };
+  }
+
+  /*
+    Very tiny optical variation usually means the camera is
+    not seeing the fingertip correctly.
+  */
+  if(rawStd<0.00005){
+
+    return {
+      good:false,
+      score:0,
+      reason:"Pulse signal is too weak."
+    };
+  }
+
+  let score=0;
+
+  if(rawStd>0.00008) score+=25;
+  if(rawStd>0.00015) score+=15;
+
+  if(filteredStd>0.00002) score+=20;
+  if(filteredStd>0.00005) score+=20;
+
+  if(filteredStd<rawStd*0.95) score+=10;
+
+  score=clamp(score,0,100);
+
+  return {
+    good:score>=55,
+    score:score,
+    reason:
+      score>=55
+        ?"Signal quality is adequate."
+        :"Signal is too noisy or weak."
+  };
+}
+
+/* -----------------------------------------------------------
+   Final measurement
+----------------------------------------------------------- */
+
+function finishMeasurement(){
+
+  if(!running) return;
+
+  running=false;
+
+  if(animationId){
+    cancelAnimationFrame(animationId);
+    animationId=null;
+  }
+
+  if(stream){
+
+    try{
+
+      const track=stream.getVideoTracks()[0];
+
+      try{
+        const capabilities=track.getCapabilities();
+
+        if(capabilities && capabilities.torch){
+          track.applyConstraints({
+            advanced:[{torch:false}]
+          }).catch(()=>{});
+        }
+      }catch(e){}
+
+    }catch(e){}
+
+    stream.getTracks().forEach(t=>t.stop());
+    stream=null;
+  }
+
+  video.srcObject=null;
+
+  startBtn.disabled=false;
+  stopBtn.disabled=true;
+
+  progressEl.style.width="100%";
+
+  if(samples.length<250){
+
+    showFailure(
+      "Not enough data was captured. Please try again and keep your finger completely still."
     );
 
-  return arr.map(
-    (v, i) =>
-      v - baseline[i]
+    return;
+  }
+
+  /*
+    Ignore the first few seconds because camera exposure and
+    auto white balance can settle after the finger covers the lens.
+  */
+  const cutoff=5;
+
+  const usable=samples.filter(
+    x=>x.t>=cutoff
+  );
+
+  const raw=usable.map(x=>x.s);
+
+  const resampled=resampleSignal(usable);
+
+  if(!resampled || resampled.length<250){
+
+    showFailure(
+      "The camera signal was not stable enough. Please try again."
+    );
+
+    return;
+  }
+
+  const detrended=detrend(resampled);
+  const filtered=smooth(detrended);
+
+  const quality=calculateQuality(
+    raw,
+    filtered
+  );
+
+  const spectral=spectralEstimate(filtered);
+  const auto=autocorrelationEstimate(filtered);
+
+  if(!spectral || !auto){
+
+    showFailure(
+      "Unable to obtain a reliable pulse signal. Please try again with the camera fully covered and your finger completely still."
+    );
+
+    return;
+  }
+
+  /*
+    We require both methods to broadly agree.
+
+    This is important because a simple peak counter can
+    accidentally interpret noise or a harmonic as the pulse.
+  */
+  const difference=
+    Math.abs(
+      spectral.bpm-auto.bpm
+    );
+
+  const spectralGood=
+    spectral.snr>=1.8;
+
+  const autoGood=
+    auto.correlation>=0.20;
+
+  const estimatesAgree=
+    difference<=18;
+
+  const reasonable=
+    spectral.bpm>=45 &&
+    spectral.bpm<=180 &&
+    auto.bpm>=45 &&
+    auto.bpm<=180;
+
+  if(
+    !quality.good ||
+    !spectralGood ||
+    !autoGood ||
+    !estimatesAgree ||
+    !reasonable
+  ){
+
+    showFailure(
+      "The pulse signal was not reliable enough for a trustworthy estimate. Please keep your fingertip completely still and repeat the measurement."
+    );
+
+    return;
+  }
+
+  /*
+    Weighted consensus.
+
+    Spectral estimate is usually more precise when the signal is
+    clean, while autocorrelation helps prevent a false spectral
+    peak.
+  */
+  let finalBpm=
+    spectral.bpm*0.60+
+    auto.bpm*0.40;
+
+  /*
+    Round to a whole BPM.
+  */
+  finalBpm=Math.round(finalBpm);
+
+  /*
+    Extra sanity check against sudden/implausible estimates.
+  */
+  if(
+    finalBpm<45 ||
+    finalBpm>180 ||
+    !isFinite(finalBpm)
+  ){
+
+    showFailure(
+      "The calculated pulse was outside the reliable measurement range. Please repeat the test."
+    );
+
+    return;
+  }
+
+  showResult(
+    finalBpm,
+    quality.score,
+    spectral.snr,
+    auto.correlation
   );
 }
 
-/* ---------------------------------------------------------
-   Autocorrelation at a lag
-   --------------------------------------------------------- */
+/* -----------------------------------------------------------
+   Result UI
+----------------------------------------------------------- */
 
-function autocorrelationAt(arr, lag) {
+function showResult(
+  bpm,
+  score,
+  snr,
+  correlation
+){
 
-  if (
-    lag <= 0 ||
-    lag >= arr.length
-  ) {
-    return -Infinity;
-  }
+  progressOuter.style.display="block";
+  progressEl.style.width="100%";
 
-  let sum = 0;
-  let count = 0;
+  resultEl.classList.remove("hidden");
 
-  for (
-    let i = lag;
-    i < arr.length;
-    i++
-  ) {
+  bpmEl.textContent=bpm+" BPM";
 
-    sum +=
-      arr[i] *
-      arr[i - lag];
+  qualityEl.className="good";
 
-    count++;
-  }
-
-  if (count === 0) {
-    return -Infinity;
-  }
-
-  return sum / count;
-}
-
-/* ---------------------------------------------------------
-   Stop camera
-   --------------------------------------------------------- */
-
-function stopCamera() {
-
-  running = false;
-
-  if (animationId !== null) {
-
-    cancelAnimationFrame(
-      animationId
-    );
-
-    animationId = null;
-  }
-
-  if (stream) {
-
-    stream.getTracks().forEach(
-      track => track.stop()
-    );
-
-    stream = null;
-  }
-
-  video.srcObject = null;
-
-  startButton.disabled = false;
-  stopButton.disabled = true;
-
-  progressBar.style.width = "0%";
+  qualityEl.textContent=
+    "✓ Good signal quality";
 
   setStatus(
-    "Measurement stopped.",
-    "warn"
+    "Measurement complete.",
+    "good"
   );
 }
 
-/* ---------------------------------------------------------
-   Buttons
-   --------------------------------------------------------- */
+function showFailure(message){
 
-startButton.addEventListener(
+  resultEl.classList.remove("hidden");
+
+  bpmEl.textContent="-- BPM";
+
+  qualityEl.className="bad";
+
+  qualityEl.textContent=
+    "✕ No reliable result";
+
+  setStatus(
+    message,
+    "bad"
+  );
+}
+
+/* -----------------------------------------------------------
+   Buttons
+----------------------------------------------------------- */
+
+startBtn.addEventListener(
   "click",
   startCamera
 );
 
-stopButton.addEventListener(
+stopBtn.addEventListener(
   "click",
   stopCamera
 );
 
-/* ---------------------------------------------------------
-   Safety cleanup
-   --------------------------------------------------------- */
-
 window.addEventListener(
   "pagehide",
-  () => {
-    stopCamera();
-  }
+  stopCamera
 );
 
 window.addEventListener(
   "beforeunload",
-  () => {
-    stopCamera();
-  }
+  stopCamera
 );
 
 </script>
