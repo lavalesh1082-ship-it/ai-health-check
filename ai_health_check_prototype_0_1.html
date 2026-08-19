@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Health Check — Prototype 0.1</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;margin:0;background:#f5f7fa;color:#17202a}
+main{max-width:720px;margin:auto;padding:18px}
+.card{background:white;border-radius:18px;padding:18px;margin:14px 0;box-shadow:0 2px 12px #00000012}
+h1{margin:0 0 6px}.muted{color:#667085;font-size:14px}
+button{border:0;border-radius:12px;padding:13px 16px;font-size:16px;font-weight:600;margin:6px 4px 6px 0;cursor:pointer}
+.primary{background:#111827;color:white}.secondary{background:#e9eef5}
+video{width:100%;max-height:420px;background:#111;border-radius:14px;object-fit:cover}
+#canvas{display:none}
+.metric{font-size:38px;font-weight:750;margin:8px 0}.status{font-weight:650}
+.good{color:#16794a}.warn{color:#a15c00}
+input[type=file]{width:100%;padding:10px}
+ul{padding-left:20px}
+.small{font-size:12px;color:#667085}
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <h1>🩺 AI Health Check</h1>
+    <div class="muted">Prototype 0.1 — camera heart-rate experiment</div>
+    <p>This prototype does not diagnose disease. It only attempts a camera-based pulse estimate.</p>
+  </div>
+
+  <div class="card">
+    <h2>❤️ Camera Pulse Check</h2>
+    <p id="instruction">Allow camera access, then gently cover the rear camera with your fingertip so the image becomes dark/red.</p>
+    <button class="primary" id="start">Start camera</button>
+    <button class="secondary" id="stop" disabled>Stop</button>
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas" width="160" height="120"></canvas>
+    <p id="status" class="status">Not started.</p>
+    <div class="metric" id="bpm">— BPM</div>
+    <div class="small">The estimate is experimental. Poor lighting, movement and camera hardware can cause failure.</div>
+  </div>
+
+  <div class="card">
+    <h2>📄 Health Report</h2>
+    <p class="muted">Prototype placeholder for the next module.</p>
+    <input type="file" accept="image/*,.pdf">
+    <p class="small">No file is uploaded anywhere by this prototype.</p>
+  </div>
+
+  <div class="card">
+    <h2>🔒 Authenticity rules</h2>
+    <ul>
+      <li>No fabricated health values.</li>
+      <li>No disease diagnosis.</li>
+      <li>If the camera signal is inadequate, the result remains unavailable.</li>
+      <li>This prototype stores nothing on a server.</li>
+    </ul>
+  </div>
+</main>
+
+<script>
+const video=document.getElementById('video');
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d',{willReadFrequently:true});
+const startBtn=document.getElementById('start');
+const stopBtn=document.getElementById('stop');
+const statusEl=document.getElementById('status');
+const bpmEl=document.getElementById('bpm');
+
+let stream=null, timer=null, samples=[], startTime=0;
+
+function cleanup(){
+  if(timer){clearInterval(timer);timer=null}
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+  startBtn.disabled=false; stopBtn.disabled=true;
+}
+function finish(){
+  if(samples.length<120){statusEl.textContent='Unable to obtain a reliable measurement. Try again with steady contact and good conditions.';bpmEl.textContent='— BPM';return}
+  const values=samples.map(x=>x.v);
+  const mean=values.reduce((a,b)=>a+b,0)/values.length;
+  const centered=values.map(v=>v-mean);
+  const peaks=[];
+  for(let i=2;i<centered.length-2;i++){
+    if(centered[i]>centered[i-1]&&centered[i]>=centered[i+1]&&centered[i]>0){
+      if(!peaks.length || i-peaks[peaks.length-1]>8) peaks.push(i);
+    }
+  }
+  const duration=(samples[samples.length-1].t-samples[0].t)/1000;
+  const rate=peaks.length>1 ? (peaks.length-1)/duration*60 : 0;
+  if(rate>=40 && rate<=180){
+    bpmEl.textContent=Math.round(rate)+' BPM';
+    statusEl.textContent='Experimental camera estimate obtained.';
+    statusEl.className='status good';
+  }else{
+    bpmEl.textContent='— BPM';
+    statusEl.textContent='Signal detected, but it was not reliable enough for a pulse estimate.';
+    statusEl.className='status warn';
+  }
+}
+async function start(){
+  cleanup(); samples=[]; bpmEl.textContent='— BPM';
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:'environment'},width:{ideal:640},height:{ideal:480}},
+      audio:false
+    });
+    video.srcObject=stream;
+    await video.play();
+    startBtn.disabled=true; stopBtn.disabled=false;
+    statusEl.textContent='Measuring for about 25 seconds… keep your finger still.';
+    const t0=performance.now();
+    timer=setInterval(()=>{
+      if(video.readyState<2)return;
+      ctx.drawImage(video,0,0,canvas.width,canvas.height);
+      const d=ctx.getImageData(55,35,50,50).data;
+      let r=0,g=0,b=0,n=0;
+      for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2];n++}
+      r/=n;g/=n;b/=n;
+      // A fingertip over the camera generally produces a red-dominant signal.
+      const signal=r-(g+b)/2;
+      samples.push({t:performance.now(),v:signal});
+      if(performance.now()-t0>25000){clearInterval(timer);timer=null;finish();cleanup()}
+    },80);
+  }catch(e){
+    statusEl.textContent='Camera access failed: '+e.message+'. Use HTTPS/localhost and allow camera permission.';
+    cleanup();
+  }
+}
+startBtn.onclick=start;
+stopBtn.onclick=()=>{cleanup();statusEl.textContent='Stopped. No result reported.';bpmEl.textContent='— BPM'};
+</script>
+</body>
+</html>
