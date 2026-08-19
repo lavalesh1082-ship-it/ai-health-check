@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f5f7fa">
+<title>AI Health Check — Camera Pulse</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f7fa;color:#17202b;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+main{max-width:720px;margin:auto;padding:18px}.card{background:#fff;border-radius:24px;padding:28px 20px;box-shadow:0 8px 30px rgba(20,30,50,.08)}
+h1{font-size:30px;margin:0 0 18px}p{font-size:18px;line-height:1.45}.buttons{display:flex;gap:12px;margin:20px 0 10px;flex-wrap:wrap}
+button{border:0;border-radius:14px;padding:16px 22px;font-size:17px;font-weight:750;background:#111827;color:#fff}button.secondary{background:#9ca3af}button:disabled{opacity:.55}
+video{display:block;width:100%;height:360px;object-fit:cover;background:#000;border-radius:22px}.status{font-size:17px;line-height:1.4;margin:18px 0;min-height:28px}
+.good{color:#16754a}.warn{color:#9a6410}.bad{color:#b42318}.bpm{font-size:64px;font-weight:850}.metric{display:flex;justify-content:space-between;border-top:1px solid #e8ebef;padding:13px 0}
+.pill{padding:6px 10px;border-radius:999px;background:#eef2f6;font-weight:700}.note{margin-top:18px;background:#fff8e8;border-left:4px solid #d99719;padding:12px 14px;border-radius:10px;font-size:14px;line-height:1.45}
+canvas{display:none}
+</style>
+</head>
+<body>
+<main><section class="card">
+<h1>❤️ Camera Pulse Check</h1>
+<p>Place your fingertip gently over the rear camera and keep it still. This makes an <b>experimental pulse estimate</b> from changes in fingertip light absorption.</p>
+<div class="buttons"><button id="start">Start camera</button><button id="stop" class="secondary" disabled>Stop</button></div>
+<video id="video" playsinline autoplay muted></video><canvas id="canvas" width="160" height="120"></canvas>
+<div id="status" class="status">Press <b>Start camera</b> to begin.</div>
+<div id="result" hidden>
+<div id="resultText" class="good">Experimental estimate obtained.</div>
+<div class="bpm"><span id="bpm">—</span> <span style="font-size:26px">BPM</span></div>
+<div class="metric"><span>Signal quality</span><span id="quality" class="pill">—</span></div>
+<div class="metric"><span>Measurements used</span><span id="beats">—</span></div>
+<div class="metric"><span>Stability</span><span id="stability">—</span></div>
+</div>
+<div class="note"><b>Important:</b> This is a wellness/educational experiment, not a medical device. Do not use the displayed BPM to diagnose or rule out a medical condition. For symptoms or heart-rate concerns, use a validated medical device and consult a healthcare professional.</div>
+</section></main>
+
+<script>
+(()=> {
+const video=document.getElementById('video'),canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});
+const start=document.getElementById('start'),stop=document.getElementById('stop'),status=document.getElementById('status');
+const result=document.getElementById('result'),bpmEl=document.getElementById('bpm'),qualityEl=document.getElementById('quality'),beatsEl=document.getElementById('beats'),stabilityEl=document.getElementById('stability'),resultText=document.getElementById('resultText');
+let stream=null,running=false,samples=[],started=0,raf=0,torch=false;
+
+function msg(t,c=''){status.className='status '+c;status.innerHTML=t}
+function median(a){let x=[...a].sort((a,b)=>a-b);return x.length?x[Math.floor(x.length/2)]:0}
+function pct(a,p){let x=[...a].sort((a,b)=>a-b);if(!x.length)return 0;let i=(x.length-1)*p,l=Math.floor(i),h=Math.ceil(i);return x[l]+(x[h]-x[l])*(i-l)}
+function smooth(a,w=4){return a.map((_,i)=>{let s=0,n=0;for(let j=Math.max(0,i-w);j<=Math.min(a.length-1,i+w);j++){s+=a[j];n++}return s/n})}
+
+async function setTorch(on){
+try{let t=stream?.getVideoTracks()[0],c=t?.getCapabilities?.();if(t&&c?.torch){await t.applyConstraints({advanced:[{torch:on}]});torch=on}}catch(e){}
+}
+function cleanup(){running=false;cancelAnimationFrame(raf);if(stream){let t=stream.getVideoTracks()[0];if(torch)setTorch(false);stream.getTracks().forEach(x=>x.stop())}stream=null;video.srcObject=null;start.disabled=false;stop.disabled=true}
+
+function sample(){
+if(!video.videoWidth)return null;ctx.drawImage(video,0,0,160,120);
+let d=ctx.getImageData(40,30,80,60).data,r=0,g=0,b=0,n=d.length/4;
+for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2]}
+return {r:r/n,g:g/n,b:b/n,signal:r/n-(g+b)/(2*n)}
+}
+function loop(now){
+if(!running)return;let sec=(now-started)/1000,s=sample();if(s)samples.push({t:now/1000,v:s.signal,r:s.r});
+if(sec<30){msg('Measuring… keep your finger completely still. <b>'+Math.ceil(30-sec)+' seconds</b> remaining.','warn');raf=requestAnimationFrame(loop)}else finish()
+}
+
+function unreliable(text){
+result.hidden=false;bpmEl.textContent='—';qualityEl.textContent='Poor';beatsEl.textContent='—';stabilityEl.textContent='Unreliable';
+resultText.className='bad';resultText.textContent='No reliable BPM reported.';msg('⚠️ '+text+' Please reposition your finger and try again.','warn');cleanup()
+}
+function finish(){
+running=false;cancelAnimationFrame(raf);
+if(samples.length<100){unreliable('Not enough camera data was captured.');return}
+let u=samples.slice(Math.floor(samples.length*.12)),raw=u.map(x=>x.v),med=median(raw),x=smooth(raw.map(v=>v-med));
+let amp=Math.max(0,pct(raw,.9)-pct(raw,.1)),dc=Math.max(1,median(u.map(q=>Math.abs(q.r)))),quality=amp/dc;
+let peaks=[],threshold=Math.max(pct(x,.70),amp*.10),last=-Infinity;
+for(let i=2;i<x.length-2;i++){let t=u[i].t;if(x[i]>x[i-1]&&x[i]>=x[i+1]&&x[i]>threshold&&t-last>=.33){peaks.push(t);last=t}}
+let ints=[];for(let i=1;i<peaks.length;i++){let d=peaks[i]-peaks[i-1];if(d>=.33&&d<=1.5)ints.push(d)}
+if(ints.length<5){unreliable('Not enough consistent pulse beats were detected.');return}
+let mi=median(ints),mad=median(ints.map(v=>Math.abs(v-mi))),stable=ints.filter(v=>Math.abs(v-mi)<=Math.max(.12,3*mad));
+if(stable.length<5){unreliable('The pulse signal was too inconsistent.');return}
+let vals=stable.map(v=>60/v),bpm=median(vals),cv=Math.sqrt(vals.reduce((s,v)=>s+(v-bpm)**2,0)/vals.length)/Math.max(1,bpm);
+let accepted=bpm>=45&&bpm<=160&&quality>=.025&&cv<.14;
+if(!accepted){unreliable('The camera signal was too weak or inconsistent for a reliable estimate.');return}
+bpmEl.textContent=Math.round(bpm);qualityEl.textContent=quality>=.06?'Good':'Fair';beatsEl.textContent=stable.length;stabilityEl.textContent=cv<.08?'Good':'Fair';
+result.hidden=false;resultText.className='good';resultText.textContent='Experimental camera estimate obtained.';
+msg('Measurement complete. Repeat 2–3 times for a more consistent wellness estimate.','good');cleanup()
+}
+
+start.onclick=async()=>{
+result.hidden=true;samples=[];
+try{
+if(!navigator.mediaDevices?.getUserMedia)throw Error('Camera is not supported by this browser.');
+msg('Requesting camera permission…','warn');
+stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:640},height:{ideal:480},frameRate:{ideal:30,max:30}},audio:false});
+video.srcObject=stream;await video.play();await setTorch(true);
+running=true;started=performance.now();start.disabled=true;stop.disabled=false;msg('Camera ready. Cover the rear camera and keep your finger still.','good');raf=requestAnimationFrame(loop)
+}catch(e){cleanup();msg('Camera access failed: '+(e.message||'Permission denied')+'. Check Chrome camera permission and try again.','bad')}
+};
+stop.onclick=()=>{msg('Measurement stopped. No result reported.','warn');cleanup()};
+window.addEventListener('pagehide',cleanup);
+})();
+</script>
+</body>
+</html>
